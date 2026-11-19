@@ -1,0 +1,52 @@
+# GitLab alternative: pinned upstream application and Playwright reports.
+stages:
+  - verify
+  - test
+
+variables:
+  CI: 'true'
+  STREAMFLIX_DIR: './streamflix-app'
+
+.playwright_job:
+  image: mcr.microsoft.com/playwright:v1.65.1-noble
+  before_script:
+    - git clone https://github.com/alokp0274/streamflix.git streamflix-app
+    - cd streamflix-app && git checkout 3d50dabe2c8ee4efd6a56ef0d2bfdc275fa2a42a && npm install --no-audit --no-fund && cd ..
+    - npm install --no-audit --no-fund
+
+verify_types:
+  stage: verify
+  extends: .playwright_job
+  script:
+    - npm run typecheck
+
+smoke_tests:
+  stage: test
+  extends: .playwright_job
+  script:
+    - npm run test:smoke
+  artifacts:
+    when: always
+    expire_in: 14 days
+    paths:
+      - playwright-report/
+      - test-results/
+    reports:
+      junit: test-results/junit.xml
+
+regression_tests:
+  stage: test
+  extends: .playwright_job
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+  script:
+    - npm run test:regression
+  artifacts:
+    when: always
+    expire_in: 14 days
+    paths:
+      - playwright-report/
+      - test-results/
+    reports:
+      junit: test-results/junit.xml
