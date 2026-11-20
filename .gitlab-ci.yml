@@ -11,8 +11,8 @@ variables:
   image: mcr.microsoft.com/playwright:v1.65.1-noble
   before_script:
     - git clone https://github.com/alokp0274/streamflix.git streamflix-app
-    - cd streamflix-app && git checkout 3d50dabe2c8ee4efd6a56ef0d2bfdc275fa2a42a && npm install --no-audit --no-fund && cd ..
-    - npm install --no-audit --no-fund
+    - cd streamflix-app && git checkout 3d50dabe2c8ee4efd6a56ef0d2bfdc275fa2a42a && cp ../vendor/streamflix.package-lock.json package-lock.json && npm ci --no-audit --no-fund && cd ..
+    - npm ci --no-audit --no-fund
 
 verify_types:
   stage: verify
