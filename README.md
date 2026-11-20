@@ -41,7 +41,7 @@ The Playwright `webServer` config automatically builds StreamFlix and starts `vi
 
 ## BDD: native Cucumber.js + Playwright
 
-The [BDD example](bdd/README.md) lives in `bdd/` with its own committed dependency lockfile and **separate Cucumber.js runner**. Gherkin scenarios in [`bdd/features/streaming.feature`](bdd/features/streaming.feature) execute TypeScript step definitions that **reuse the same Page Objects** as the standard Playwright tests. A dedicated [GitHub Actions workflow](.github/workflows/cucumber.yml) runs BDD smoke scenarios and publishes Cucumber HTML/JSON reports.
+The [BDD example](bdd/README.md) lives in `bdd/` with its own committed dependency lockfile and **separate Cucumber.js runner**. Gherkin scenarios in [`bdd/features/streaming.feature`](bdd/features/streaming.feature) execute TypeScript step definitions that **reuse the same Page Objects** as the standard Playwright tests. A dedicated [GitHub Actions workflow](.github/workflows/cucumber.yml) runs BDD smoke scenarios for pull requests and the full tagged BDD regression on main pushes/manual runs, publishing Cucumber HTML/JSON reports.
 
 From the `bdd/` directory, run `npm ci`, then `npm run test:smoke` (or `npm run test:regression`). Cucumber hooks start the StreamFlix preview automatically unless `BASE_URL` is provided.
 

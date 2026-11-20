@@ -66,12 +66,12 @@ jobs:
         run: npm run typecheck
 
       - name: Execute BDD smoke scenarios
-        if: github.event_name != 'workflow_dispatch'
+        if: github.event_name == 'pull_request'
         working-directory: qe/bdd
         run: npm run test:smoke
 
-      - name: Execute full BDD regression manually
-        if: github.event_name == 'workflow_dispatch'
+      - name: Execute full BDD regression on main and manual runs
+        if: github.event_name != 'pull_request'
         working-directory: qe/bdd
         run: npm run test:regression
 

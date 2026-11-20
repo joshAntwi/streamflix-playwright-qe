@@ -27,7 +27,7 @@ npm run test:regression
 
 The upstream app must have dependencies installed via its *reconciled* lockfile (see the repository root README). By default the BDD hooks build it and start a local preview at http://127.0.0.1:4173. For an already running app, use `BASE_URL=http://127.0.0.1:4173 npm run test:smoke`. Set `STREAMFLIX_DIR` if the app checkout is in another directory.
 
-Results: `bdd/reports/cucumber.html` and `bdd/reports/cucumber.json`. CI publishes both as artifacts.
+Results: `bdd/reports/cucumber.html` and `bdd/reports/cucumber.json`. CI runs smoke scenarios on pull requests and all tagged regression scenarios on main pushes/manual runs; it publishes both reports as artifacts.
 
 ## Why the two frameworks?
 
