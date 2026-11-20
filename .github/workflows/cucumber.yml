@@ -1,0 +1,80 @@
+name: Cucumber.js BDD quality gate
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'bdd/**'
+      - 'pages/**'
+      - '.github/workflows/cucumber.yml'
+  pull_request:
+    paths:
+      - 'bdd/**'
+      - 'pages/**'
+      - '.github/workflows/cucumber.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write # bootstrap only; removed after the lockfile is committed
+
+jobs:
+  cucumber:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    container:
+      image: mcr.microsoft.com/playwright:v1.65.1-noble
+    env:
+      CI: 'true'
+      STREAMFLIX_DIR: ${{ github.workspace }}/streamflix-app
+    steps:
+      - name: Checkout QE framework
+        uses: actions/checkout@v4
+        with:
+          path: qe
+
+      - name: Checkout pinned StreamFlix app
+        uses: actions/checkout@v4
+        with:
+          repository: alokp0274/streamflix
+          ref: 3d50dabe2c8ee4efd6a56ef0d2bfdc275fa2a42a
+          path: streamflix-app
+          persist-credentials: false
+
+      - name: Bootstrap and commit BDD npm lockfile
+        working-directory: qe/bdd
+        run: |
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+          git add package-lock.json
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m "chore(bdd): lock Cucumber dependencies"
+          git push origin HEAD:main
+
+      - name: Install StreamFlix from reconciled upstream lock
+        working-directory: streamflix-app
+        run: |
+          cp ../qe/vendor/streamflix.package-lock.json package-lock.json
+          npm ci --no-audit --no-fund
+
+      - name: Install root QE dependencies for shared Page Objects
+        working-directory: qe
+        run: npm ci --no-audit --no-fund
+
+      - name: Install BDD dependencies
+        working-directory: qe/bdd
+        run: npm ci --no-audit --no-fund
+
+      - name: Typecheck Cucumber support code and steps
+        working-directory: qe/bdd
+        run: npm run typecheck
+
+      - name: Execute BDD smoke scenarios
+        working-directory: qe/bdd
+        run: npm run test:smoke
+
+      - name: Upload Cucumber HTML, JSON and screenshot attachments
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cucumber-bdd-${{ github.run_id }}
+          path: qe/bdd/reports/
+          if-no-files-found: warn
+          retention-days: 14

@@ -1,0 +1,21 @@
+{
+  "name": "streamflix-cucumber-bdd",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Native Cucumber.js BDD scenarios using Playwright for browser automation",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "test": "cucumber-js --config cucumber.mjs",
+    "test:smoke": "cucumber-js --config cucumber.mjs --tags @smoke",
+    "test:regression": "cucumber-js --config cucumber.mjs --tags '@smoke or @regression'",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@cucumber/cucumber": "13.3.0",
+    "@playwright/test": "1.65.1",
+    "@types/node": "^22.18.0",
+    "tsx": "4.23.15",
+    "typescript": "7.0.2"
+  }
+}
