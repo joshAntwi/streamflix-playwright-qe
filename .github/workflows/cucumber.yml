@@ -21,12 +21,15 @@ jobs:
   cucumber:
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    container:
-      image: mcr.microsoft.com/playwright:v1.65.1-noble
     env:
       CI: 'true'
       STREAMFLIX_DIR: ${{ github.workspace }}/streamflix-app
     steps:
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
       - name: Checkout QE framework
         uses: actions/checkout@v4
         with:
@@ -54,13 +57,23 @@ jobs:
         working-directory: qe/bdd
         run: npm ci --no-audit --no-fund
 
+      - name: Install Chromium browser and Linux dependencies
+        working-directory: qe/bdd
+        run: npx playwright install --with-deps chromium
+
       - name: Typecheck Cucumber support code and steps
         working-directory: qe/bdd
         run: npm run typecheck
 
       - name: Execute BDD smoke scenarios
+        if: github.event_name != 'workflow_dispatch'
         working-directory: qe/bdd
         run: npm run test:smoke
+
+      - name: Execute full BDD regression manually
+        if: github.event_name == 'workflow_dispatch'
+        working-directory: qe/bdd
+        run: npm run test:regression
 
       - name: Upload Cucumber HTML, JSON and screenshot attachments
         if: always()
