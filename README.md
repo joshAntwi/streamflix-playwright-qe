@@ -14,26 +14,30 @@ A **senior-level quality engineering showcase** testing the real [StreamFlix dem
 ## Local quick start
 
 ```bash
-# Clone the independent app into a SIBLING directory
+# Keep the app and test framework as sibling directories
 mkdir streamflix-showcase && cd streamflix-showcase
+git clone https://github.com/joshAntwi/streamflix-playwright-qe.git
 git clone https://github.com/alokp0274/streamflix.git streamflix
+
+# The pinned upstream revision has an outdated lockfile, so use our
+# committed, reconciled copy for reproducible installations.
 cd streamflix
 git checkout 3d50dabe2c8ee4efd6a56ef0d2bfdc275fa2a42a
-npm install
-cd ..
+cp ../streamflix-playwright-qe/vendor/streamflix.package-lock.json package-lock.json
+npm ci
 
-# Place/unzip or clone this framework here as streamflix-playwright-qe
-cd streamflix-playwright-qe
-npm install
+# Install the QE dependencies from the committed package-lock.json
+cd ../streamflix-playwright-qe
+npm ci
 npx playwright install --with-deps
 npm run typecheck
 npm run test:smoke
 npm run report
 ```
 
-The Playwright `webServer` config automatically builds StreamFlix and starts `vite preview` on port **4173**. You do **not** need to start the app manually. If the app is elsewhere, set `STREAMFLIX_DIR` to its path. To test an already running deployment, set `BASE_URL`; this disables automatic app startup. On Windows PowerShell use `$env:STREAMFLIX_DIR='..\\streamflix'` etc.
+The Playwright `webServer` config automatically builds StreamFlix and starts `vite preview` on port **4173**. You do **not** need to start the app manually. If the app is elsewhere, set `STREAMFLIX_DIR` to its path. To test an already running deployment, set `BASE_URL`; this disables automatic app startup. On Windows PowerShell, use `Copy-Item` instead of `cp` and set `$env:STREAMFLIX_DIR='..\\streamflix'`.
 
-**Dependency lock:** This deliverable was produced without npm registry access, so a real `package-lock.json` cannot be generated or verified here. On first connected setup run `npm install`, commit its generated lockfile, and replace `npm install` with `npm ci` in both CI configurations. Never hand-write a fake lockfile.
+**Dependency locks:** `package-lock.json` records the resolved QE framework dependency tree. `vendor/streamflix.package-lock.json` is a reconciled lockfile for the *pinned upstream app revision*, whose checked-in lockfile does not pass `npm ci`. Both GitHub Actions and the GitLab pipeline use **`npm ci`**, and dependency changes should be made deliberately in a reviewed commit rather than resolved on every CI run.
 
 ## Useful commands
 
@@ -64,12 +68,14 @@ streamflix-playwright-qe/
 │   ├── accessibility/            # axe scan and evidence
 │   └── visual/                   # opt-in baseline workflow
 ├── docs/                         # strategy, traceability, manual pack, bug, release report
+├── package-lock.json              # reproducible QE dependencies
+├── vendor/streamflix.package-lock.json # reconciled lock for pinned upstream
 ├── .github/workflows/playwright.yml
 ├── .gitlab-ci.yml
 └── playwright.config.ts
 ```
 
-Tests use **accessible locators**, browser-context isolation, a one-time session seeding helper (not global `addInitScript`, which could invalidate reload tests), **web-first assertions**, and clear `@smoke`, `@regression`, `@api`, `@a11y`, `@visual`, `@known-issue` tags. All page selectors were cross-checked against the upstream source at the pinned revision; browser execution still needs to be validated on a networked machine.
+Tests use **accessible locators**, browser-context isolation, a one-time session seeding helper (not global `addInitScript`, which could invalidate reload tests), **web-first assertions**, and clear `@smoke`, `@regression`, `@api`, `@a11y`, `@visual`, `@known-issue` tags. All page selectors were cross-checked against the upstream source at the pinned revision; Chromium smoke execution has passed in GitHub Actions; full cross-browser regression still requires a separate run.
 
 ## CI strategy
 
@@ -93,6 +99,6 @@ Tests use **accessible locators**, browser-context isolation, a one-time session
 - App is upstream and could change. The pinned commit prevents unexpected test drift; review upgrades intentionally.
 - HTTP delivery checks are **not** comprehensive API, security, contract or load tests. A real service needs its own request-layer suite with valid/invalid payloads, auth, idempotence, data cleanup and schema assertions.
 - Browser/device emulation cannot certify playback, DRM, codec support, remote controls or memory on Tizen/webOS/Fire TV/Apple TV. Maintain a physical-device matrix and manual pack.
-- This project has **not been executed against a live browser in the creation environment** because network-based npm installation and the upstream clone were unavailable. Run the commands above, record results and fix any upstream differences before presenting.
+- **GitHub Actions has passed TypeScript checks and the Chromium smoke gate** with the committed lockfiles. Full cross-browser regression, optional visual baselines, and real-device validation are separate follow-up checks; do not treat the smoke result as complete release certification.
 
 Original StreamFlix code remains under its own MIT license; this framework is an independent demonstration and is not affiliated with Netflix or its brands.
