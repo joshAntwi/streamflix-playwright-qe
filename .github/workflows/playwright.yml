@@ -35,18 +35,23 @@ jobs:
           path: streamflix-app
           persist-credentials: false
 
-      # Temporary bootstrap: generates a real npm lockfile on a networked runner.
-      - name: Generate and commit QE lockfile
-        working-directory: qe
+      # Temporary one-time bootstrap for the pinned upstream app's stale lockfile.
+      - name: Generate and commit pinned StreamFlix lockfile
+        working-directory: streamflix-app
         run: |
           npm install --package-lock-only --ignore-scripts --no-audit --no-fund
-          git add package-lock.json
-          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m "chore: commit resolved npm lockfile"
+          mkdir -p ../qe/vendor
+          cp package-lock.json ../qe/vendor/streamflix.package-lock.json
+          cd ../qe
+          git add vendor/streamflix.package-lock.json
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m "chore: pin reconciled StreamFlix upstream dependencies"
           git push origin HEAD:main
 
       - name: Install upstream application
         working-directory: streamflix-app
-        run: npm ci --no-audit --no-fund
+        run: |
+          cp ../qe/vendor/streamflix.package-lock.json package-lock.json
+          npm ci --no-audit --no-fund
 
       - name: Install QE framework
         working-directory: qe
