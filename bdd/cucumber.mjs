@@ -1,6 +1,5 @@
 // Native Cucumber runner. This is independent of playwright.config.ts.
 export default {
-  default: {
     paths: ['features/**/*.feature'],
     import: [
       './tsx-register.mjs',
@@ -15,5 +14,4 @@ export default {
     ],
     tags: 'not @wip',
     parallel: 0,
-  },
 };

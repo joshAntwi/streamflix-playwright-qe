@@ -39,6 +39,14 @@ The Playwright `webServer` config automatically builds StreamFlix and starts `vi
 
 **Dependency locks:** `package-lock.json` records the resolved QE framework dependency tree. `vendor/streamflix.package-lock.json` is a reconciled lockfile for the *pinned upstream app revision*, whose checked-in lockfile does not pass `npm ci`. Both GitHub Actions and the GitLab pipeline use **`npm ci`**, and dependency changes should be made deliberately in a reviewed commit rather than resolved on every CI run.
 
+## BDD: native Cucumber.js + Playwright
+
+The [BDD example](bdd/README.md) lives in `bdd/` with its own committed dependency lockfile and **separate Cucumber.js runner**. Gherkin scenarios in [`bdd/features/streaming.feature`](bdd/features/streaming.feature) execute TypeScript step definitions that **reuse the same Page Objects** as the standard Playwright tests. A dedicated [GitHub Actions workflow](.github/workflows/cucumber.yml) runs BDD smoke scenarios and publishes Cucumber HTML/JSON reports.
+
+From the `bdd/` directory, run `npm ci`, then `npm run test:smoke` (or `npm run test:regression`). Cucumber hooks start the StreamFlix preview automatically unless `BASE_URL` is provided.
+
+**Why separate runners?** Cucumber.js owns the Gherkin lifecycle, World, hooks, tags and Cucumber reports; Playwright supplies the browser and assertions, but its `test` fixtures and reporter are not active. If you want to keep the Playwright Test runner for Gherkin, consider [playwright-bdd](https://github.com/vitalets/playwright-bdd).
+
 ## Useful commands
 
 | Command | Purpose |
@@ -67,10 +75,12 @@ streamflix-playwright-qe/
 │   ├── resilience/               # failed asset requests and a tracked known defect
 │   ├── accessibility/            # axe scan and evidence
 │   └── visual/                   # opt-in baseline workflow
+├── bdd/                          # native Cucumber runner + feature files + lockfile
 ├── docs/                         # strategy, traceability, manual pack, bug, release report
 ├── package-lock.json              # reproducible QE dependencies
 ├── vendor/streamflix.package-lock.json # reconciled lock for pinned upstream
 ├── .github/workflows/playwright.yml
+├── .github/workflows/cucumber.yml  # independent BDD smoke workflow
 ├── .gitlab-ci.yml
 └── playwright.config.ts
 ```

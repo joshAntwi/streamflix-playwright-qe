@@ -15,7 +15,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write # bootstrap only; removed after the lockfile is committed
+  contents: read
 
 jobs:
   cucumber:
@@ -39,14 +39,6 @@ jobs:
           ref: 3d50dabe2c8ee4efd6a56ef0d2bfdc275fa2a42a
           path: streamflix-app
           persist-credentials: false
-
-      - name: Bootstrap and commit BDD npm lockfile
-        working-directory: qe/bdd
-        run: |
-          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
-          git add package-lock.json
-          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m "chore(bdd): lock Cucumber dependencies"
-          git push origin HEAD:main
 
       - name: Install StreamFlix from reconciled upstream lock
         working-directory: streamflix-app
