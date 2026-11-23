@@ -47,6 +47,22 @@ From the `bdd/` directory, run `npm ci`, then `npm run test:smoke` (or `npm run 
 
 **Why separate runners?** Cucumber.js owns the Gherkin lifecycle, World, hooks, tags and Cucumber reports; Playwright supplies the browser and assertions, but its `test` fixtures and reporter are not active. If you want to keep the Playwright Test runner for Gherkin, consider [playwright-bdd](https://github.com/vitalets/playwright-bdd).
 
+## What the functional tests actually prove
+
+A green HTML response is **not** a working deep link. Infrastructure checks and product guarantees are separate:
+
+| Risk | Testable outcome | Location |
+| --- | --- | --- |
+| Bookmarked search | `/search?q=crimson` loads matching titles and retains query/results after reload | `tests/ui/search.spec.ts` |
+| Content discovery | Navbar search navigates to results and opens title details | `tests/ui/search.spec.ts` |
+| Playback controls | Selected title opens in player, mute and speed change the actual `HTMLMediaElement` properties | `tests/ui/player.spec.ts` |
+| Actual HLS playback | Optional test waits for decodable media and an advancing timeline; relies on a third-party stream | `tests/ui/player.spec.ts` |
+| Watchlist | Adding/removing content persists across reloads | `tests/ui/watchlist.spec.ts` |
+| Recovery | Bad links, empty search, corrupted state and sign-out each have tested user outcomes | `tests/ui/*.spec.ts` |
+| Deployment prerequisites | HTTP HTML/JS delivery and SPA history fallback, **not** React route execution or backend APIs | `tests/api/http.spec.ts` |
+
+For optional live playback verification, run `RUN_LIVE_STREAM=1 npx playwright test tests/ui/player.spec.ts --project=chromium --grep @external-stream`. Public HLS/CDN availability makes it unsuitable for a deterministic PR smoke gate.
+
 ## Useful commands
 
 | Command | Purpose |
