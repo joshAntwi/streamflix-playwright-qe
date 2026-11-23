@@ -101,7 +101,7 @@ streamflix-playwright-qe/
 └── playwright.config.ts
 ```
 
-Tests use **accessible locators**, browser-context isolation, a one-time session seeding helper (not global `addInitScript`, which could invalidate reload tests), **web-first assertions**, and clear `@smoke`, `@regression`, `@api`, `@a11y`, `@visual`, `@known-issue` tags. All page selectors were cross-checked against the upstream source at the pinned revision; Chromium smoke execution has passed in GitHub Actions; full cross-browser regression still requires a separate run.
+Tests use **accessible locators**, browser-context isolation, a guarded pre-navigation `addInitScript` session seed (one-time per tab, preserving changes across reloads), **web-first assertions**, and clear `@smoke`, `@regression`, `@api`, `@a11y`, `@visual`, `@known-issue` tags. All page selectors were cross-checked against the upstream source at the pinned revision; Chromium smoke execution has passed in GitHub Actions; full cross-browser regression still requires a separate run.
 
 ## CI strategy
 
