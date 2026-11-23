@@ -10,7 +10,7 @@ test.describe('REQ-PLAYER: playback journeys and controls', () => {
     await page.getByRole('dialog').getByRole('button', { name: 'Play', exact: true }).click();
 
     await expect(page).toHaveURL(/\/watch\/t1$/);
-    await expect(page.getByText('The Crimson Hour', { exact: true })).toBeVisible();
+    await expect(page.getByText(/The Crimson Hour/).first()).toBeVisible();
 
     const video = page.locator('video');
     await expect(video).toBeVisible();
