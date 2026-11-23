@@ -12,8 +12,8 @@
 
 ## 8–14 min — Execute test journeys
 - npm run test:smoke
-- Show a real login, search->modal, watchlist save->reload, and player controls check.
-- Open tests/api/http.spec.ts and clarify static HTTP checks are not backend contract tests.
+- Show real login, navbar search->modal->Play, watchlist add/remove across reload, and a bookmarked search URL that still works after refresh.
+- Contrast the HTTP fallback check with the rendered browser deep-link test; show mute/speed changing HTMLMediaElement properties, and discuss optional true HLS streaming separately.
 - Discuss negative paths, resilience mocking, accessibility and screenshot baselines.
 
 ## 14–19 min — Debug a defect
