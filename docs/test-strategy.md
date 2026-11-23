@@ -16,19 +16,20 @@ StreamFlix is a **frontend-only** streaming concept. This suite tests a *pinned 
 | Authentication and profile navigation | High | Medium | UI valid/invalid and protected routes | Usability review; real authentication out of scope |
 | Search and catalogue discovery | High | Medium | Positive, negative, reset, content modal | Exploratory text/locale behaviour |
 | Watchlist persistence | High | Medium | Add/remove, empty state, reload | Cross-profile exploratory |
-| Playback UX | Critical | High | Video shell and player controls | Real stream, DRM, subtitle/audio and supported devices |
+| Playback UX | Critical | High | Title-to-player journey, mute/speed checks against media element, opt-in decoded HLS timeline check | CDN availability, DRM, subtitle/audio and supported devices |
 | Failed HLS stream | High | Medium | BUG-001 negative executable specification | Fix assessment and retest on actual devices |
 | Browser compatibility | High | Medium | Chromium, Firefox, WebKit, mobile emulation | Actual supported device matrix |
 | Accessibility | High | Medium | Axe critical scan, semantic locators | Keyboard, screen reader, focus, contrast |
 | UI regressions | Medium | Medium | Opt-in reviewed screenshot baseline | Human review of visual and dynamic states |
-| Static delivery | Medium | Low | HTML routing, JS bundle HTTP checks | Actual API contracts absent |
+| Static delivery | Medium | Low | HTML, JS and SPA history fallback only — not browser routing | CDN deployment verification; backend contracts absent |
 
 ## Test layers and ownership
 1. **Static verification**: TypeScript typecheck, dependency and repository hygiene.
 2. **HTTP delivery checks**: frontend shell and built assets. NOT backend API contract coverage.
-3. **Browser functional**: meaningful user journeys using role/label locators and isolated contexts.
+3. **Browser functional**: browser-rendered deep links, navbar search, watchlist lifecycle, player controls that change actual media properties, session and error recovery.
 4. **Resilience and accessibility**: controlled failures, expected broken behaviours and Axe.
-5. **Exploratory / real device**: remote navigation, playback, codecs, DRM, power cycles, network and sustained performance.
+5. **Optional live HLS integration**: opt-in media readiness and progressing timeline, separately reported because the public streaming provider is outside our control.
+6. **Exploratory / real device**: remote navigation, playback, codecs, DRM, power cycles, network and sustained performance.
 
 ## Entry criteria
 - Upstream revision and test environment pinned, reachable and documented.
@@ -53,3 +54,10 @@ StreamFlix is a **frontend-only** streaming concept. This suite tests a *pinned 
 - No genuine CRUD API testing, authentication security, load testing or contract testing without a backend.
 - No claim that emulated mobile is physical smart-TV testing.
 - Extend to a device-lab integration once target TV platforms and available automation interfaces are known.
+
+## Evidence quality
+
+- **HTTP 200 + app shell** demonstrates a deployment fallback only. Browser routing requires a real browser, populated query state, correct results and reload checks.
+- **Player controls visible** is not proof that mute/volume or speed works. Assert observable media element state; real playback requires decoded media and an advancing clock.
+- **Error messages visible** is not sufficient if the recovery action fails. Use the action and verify the destination.
+- State-changing journeys should assert user outcomes both immediately and after reload. Note that demo localStorage sessions are not equivalent to a server-authenticated service.
