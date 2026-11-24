@@ -22,7 +22,7 @@ type DemoState = {
   recentSearches: string[];
 };
 
-/** The app intentionally uses demo-only localStorage auth, not a backend. */
+/** The app deliberately uses demo localStorage auth, not a backend. */
 export function demoState(overrides: Partial<DemoState> = {}): DemoState {
   return {
     user: {
@@ -47,28 +47,9 @@ export function demoState(overrides: Partial<DemoState> = {}): DemoState {
 }
 
 /**
-export async function seedDemoSession(page: Page, state = demoState()) {
-  await page.goto('/');
-  await page.evaluate(
-    ({ key, value }) => window.localStorage.setItem(key, value),
-    { key: STORAGE_KEY, value: JSON.stringify(state) },
-  );
-  await page.goto('/browse');
-  await expect(page).toHaveURL(/\/browse$/);
-}
-
-type Fixtures = { authenticatedPage: Page };
-export const test = base.extend<Fixtures>({
-  authenticatedPage: async ({ page }, use) => {
-    await seedDemoSession(page);
-    await use(page);
-  },
-});
-export { expect };/**
- * Seed before the app's first script reads localStorage.
- * Guard with sessionStorage so hard navigations/reloads DON'T reset the
- * user's watchlist or other changes created within the same test scenario.
- * This removes a race with StreamFlix's initial persistence useEffect.
+ * Set up demo session before StreamFlix's initial React render.
+ * One-time tab marker prevents reload/navigation from wiping watchlist changes.
+ * Avoids a race with the application's persistence useEffect.
  */
 export async function seedDemoSession(page: Page, state = demoState()) {
   await page.addInitScript(
@@ -86,11 +67,14 @@ export async function seedDemoSession(page: Page, state = demoState()) {
   await page.goto('/browse');
   await expect(page).toHaveURL(/\/browse$/);
 }
+
 type Fixtures = { authenticatedPage: Page };
+
 export const test = base.extend<Fixtures>({
   authenticatedPage: async ({ page }, use) => {
     await seedDemoSession(page);
     await use(page);
   },
 });
+
 export { expect };
