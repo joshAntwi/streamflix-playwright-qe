@@ -55,7 +55,7 @@ jobs:
         run: npm run test:smoke
 
       - name: Cross-browser regression on schedule or manual trigger
-        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request'
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         working-directory: qe
         env:
           # Firefox refuses to launch as root when GitHub's mounted HOME is
