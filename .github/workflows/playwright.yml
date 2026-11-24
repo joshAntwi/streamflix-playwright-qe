@@ -9,7 +9,7 @@ on:
     - cron: '0 6 * * 1'
 
 permissions:
-  contents: read
+  contents: write # temporary lockfile bootstrap, revert to read
 
 jobs:
   tests:
@@ -40,6 +40,14 @@ jobs:
         run: |
           cp ../qe/vendor/streamflix.package-lock.json package-lock.json
           npm ci --no-audit --no-fund
+
+      - name: Regenerate and commit pinned QE dependency lockfile
+        working-directory: qe
+        run: |
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+          git add package-lock.json
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m "chore: lock playwright-bdd 9.2.1 dependencies"
+          git push origin HEAD:main
 
       - name: Install QE framework
         working-directory: qe
