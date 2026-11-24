@@ -19,6 +19,8 @@
     "playwright.config.ts",
     "pages/**/*.ts",
     "fixtures/**/*.ts",
-    "tests/**/*.ts"
+    "tests/**/*.ts",
+    "playwright-bdd.config.ts",
+    "pw-bdd/steps/**/*.ts"
   ]
 }

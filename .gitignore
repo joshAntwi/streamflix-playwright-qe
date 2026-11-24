@@ -13,3 +13,7 @@ build/
 .DS_Store
 *.log
 bdd/reports/
+pw-bdd/.features-gen/
+pw-bdd/playwright-report/
+pw-bdd/test-results/
+pw-bdd/reports/

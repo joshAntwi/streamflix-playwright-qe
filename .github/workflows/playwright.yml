@@ -9,7 +9,7 @@ on:
     - cron: '0 6 * * 1'
 
 permissions:
-  contents: write # temporary lockfile bootstrap, revert to read
+  contents: read
 
 jobs:
   tests:
@@ -41,14 +41,6 @@ jobs:
           cp ../qe/vendor/streamflix.package-lock.json package-lock.json
           npm ci --no-audit --no-fund
 
-      - name: Regenerate and commit pinned QE dependency lockfile
-        working-directory: qe
-        run: |
-          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
-          git add package-lock.json
-          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m "chore: lock playwright-bdd 9.2.1 dependencies"
-          git push origin HEAD:main
-
       - name: Install QE framework
         working-directory: qe
         run: npm ci --no-audit --no-fund
@@ -61,6 +53,11 @@ jobs:
         if: github.event_name != 'schedule' && github.event_name != 'workflow_dispatch'
         working-directory: qe
         run: npm run test:smoke
+
+      - name: Chromium regression on main (business-critical journeys)
+        if: github.event_name == 'push'
+        working-directory: qe
+        run: npm run test:regression -- --project=chromium
 
       - name: Cross-browser regression on schedule or manual trigger
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'

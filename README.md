@@ -41,11 +41,13 @@ The Playwright `webServer` config automatically builds StreamFlix and starts `vi
 
 ## BDD: native Cucumber.js + Playwright
 
-The [BDD example](bdd/README.md) lives in `bdd/` with its own committed dependency lockfile and **separate Cucumber.js runner**. Gherkin scenarios in [`bdd/features/streaming.feature`](bdd/features/streaming.feature) execute TypeScript step definitions that **reuse the same Page Objects** as the standard Playwright tests. A dedicated [GitHub Actions workflow](.github/workflows/cucumber.yml) runs BDD smoke scenarios for pull requests and the full tagged BDD regression on main pushes/manual runs, publishing Cucumber HTML/JSON reports.
+The [native Cucumber example](bdd/README.md) lives in `bdd/` with its own committed dependency lockfile and **separate Cucumber.js runner**. Gherkin scenarios in [`bdd/features/streaming.feature`](bdd/features/streaming.feature) execute TypeScript step definitions that **reuse the same Page Objects** as the standard Playwright tests. A dedicated [GitHub Actions workflow](.github/workflows/cucumber.yml) runs BDD smoke scenarios for pull requests and the full tagged BDD regression on main pushes/manual runs, publishing Cucumber HTML/JSON reports.
 
 From the `bdd/` directory, run `npm ci`, then `npm run test:smoke` (or `npm run test:regression`). Cucumber hooks start the StreamFlix preview automatically unless `BASE_URL` is provided.
 
-**Why separate runners?** Cucumber.js owns the Gherkin lifecycle, World, hooks, tags and Cucumber reports; Playwright supplies the browser and assertions, but its `test` fixtures and reporter are not active. If you want to keep the Playwright Test runner for Gherkin, consider [playwright-bdd](https://github.com/vitalets/playwright-bdd).
+**Why separate runners?** Native Cucumber.js owns World, hooks, tags and Cucumber reports. Playwright drives its browser but Playwright Test fixtures are not active. **[Playwright-BDD](pw-bdd/README.md)** is also implemented: it generates Playwright Test cases from Gherkin using `createBdd()`, reuses the same Page Objects, and retains Playwright's runner, fixtures, HTML reports and traces.
+
+Run the adapter from the repository root using `npm run test:pw-bdd:smoke` or `npm run test:pw-bdd`. See [its GitHub Actions workflow](.github/workflows/playwright-bdd.yml). The `playwright-bdd` dependency is pinned to **9.2.1** in the root lockfile.
 
 ## Useful commands
 
@@ -57,6 +59,9 @@ From the `bdd/` directory, run `npm ci`, then `npm run test:smoke` (or `npm run 
 | `npm run test:api` | App shell / static delivery HTTP requests |
 | `npm run test:a11y` | Axe accessibility assessment |
 | `npm run test:known-issues` | Documented expected-failing bug reproduction |
+| `RUN_MEDIA=1 npx playwright test --project=chromium --grep @external-media` | Optional real-HLS playback test; external CDN dependent |
+| `npm run test:pw-bdd` | Generate and execute Gherkin with the Playwright Test runner |
+| `npm run test:pw-bdd:smoke` | Same, limited to `@smoke` scenarios |
 | `RUN_VISUAL=1 npm run test:visual:update` | Create visual baseline locally; review it before committing |
 | `RUN_VISUAL=1 npm run test:visual` | Compare against approved baseline |
 | `npm run test:ui` | Interactive Playwright debugging |
@@ -76,20 +81,25 @@ streamflix-playwright-qe/
 │   ├── accessibility/            # axe scan and evidence
 │   └── visual/                   # opt-in baseline workflow
 ├── bdd/                          # native Cucumber runner + feature files + lockfile
+├── pw-bdd/                       # Gherkin compiled to Playwright Test
+├── playwright-bdd.config.ts       # separate Playwright Test BDD config
 ├── docs/                         # strategy, traceability, manual pack, bug, release report
 ├── package-lock.json              # reproducible QE dependencies
 ├── vendor/streamflix.package-lock.json # reconciled lock for pinned upstream
 ├── .github/workflows/playwright.yml
-├── .github/workflows/cucumber.yml  # independent BDD smoke workflow
+├── .github/workflows/cucumber.yml  # native Cucumber workflow
+├── .github/workflows/playwright-bdd.yml # Gherkin + Playwright Test workflow
 ├── .gitlab-ci.yml
 └── playwright.config.ts
 ```
+
+The **deep-link functional tests** are in `tests/ui/deeplink.spec.ts`: they verify route content and reload state in a real browser. The remaining `tests/api/http.spec.ts` is an explicitly labelled static-delivery check, not a proof of client-side navigation. Player controls are checked against the actual `HTMLVideoElement`; genuine CDN-driven playback is opt-in via `RUN_MEDIA=1`. A separate `@known-issue` test captures missing fatal-HLS error feedback without concealing it in the normal gate. Native Cucumber starts with 4 demo watchlist items; it asserts per-title outcomes rather than assuming an empty list.
 
 Tests use **accessible locators**, browser-context isolation, a one-time session seeding helper (not global `addInitScript`, which could invalidate reload tests), **web-first assertions**, and clear `@smoke`, `@regression`, `@api`, `@a11y`, `@visual`, `@known-issue` tags. All page selectors were cross-checked against the upstream source at the pinned revision; Chromium smoke execution has passed in GitHub Actions; full cross-browser regression still requires a separate run.
 
 ## CI strategy
 
-**GitHub Actions** runs smoke tests for pull requests/pushes, and cross-browser regression on scheduled/manual runs. It checks out the pinned StreamFlix app separately, installs dependencies, builds/serves the production Vite bundle, publishes HTML and JUnit reports plus failure screenshots, videos, and traces. **GitLab CI** mirrors the smoke gate and provides JUnit reports suitable for merge-request display.
+**GitHub Actions** runs Chromium smoke tests for pull requests/pushes, Chromium regression on main pushes, and cross-browser regression on scheduled/manual runs. It checks out the pinned StreamFlix app separately, installs dependencies, builds/serves the production Vite bundle, publishes HTML and JUnit reports plus failure screenshots, videos, and traces. **GitLab CI** mirrors the smoke gate and provides JUnit reports suitable for merge-request display.
 
 **Known issue:** `BUG-001` reproduces missing player error feedback when the HLS manifest fails. It's deliberately isolated from the normal gate using `@known-issue` and a Playwright expected-failure annotation. Run `npm run test:known-issues` to see the expected failure. See [defect report](docs/defect-BUG-001.md). Do not interpret this as a resolved bug.
 
