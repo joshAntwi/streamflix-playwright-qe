@@ -1,0 +1,85 @@
+name: Playwright-BDD acceptance tests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'pw-bdd/**'
+      - 'pages/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'playwright-bdd.config.ts'
+      - '.github/workflows/playwright-bdd.yml'
+  pull_request:
+    paths:
+      - 'pw-bdd/**'
+      - 'pages/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'playwright-bdd.config.ts'
+      - '.github/workflows/playwright-bdd.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  scenarios:
+    name: Playwright Test runner + Gherkin
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    container:
+      image: mcr.microsoft.com/playwright:v1.65.1-noble
+    env:
+      CI: 'true'
+      STREAMFLIX_DIR: ${{ github.workspace }}/streamflix-app
+    steps:
+      - name: Checkout QE framework
+        uses: actions/checkout@v4
+        with:
+          path: qe
+
+      - name: Checkout pinned StreamFlix app
+        uses: actions/checkout@v4
+        with:
+          repository: alokp0274/streamflix
+          ref: 3d50dabe2c8ee4efd6a56ef0d2bfdc275fa2a42a
+          path: streamflix-app
+          persist-credentials: false
+
+      - name: Install StreamFlix
+        working-directory: streamflix-app
+        run: |
+          cp ../qe/vendor/streamflix.package-lock.json package-lock.json
+          npm ci --no-audit --no-fund
+
+      - name: Install QE framework and Playwright-BDD
+        working-directory: qe
+        run: npm ci --no-audit --no-fund
+
+      - name: Typecheck
+        working-directory: qe
+        run: npm run typecheck
+
+      - name: Run Gherkin smoke scenarios for pull requests
+        if: github.event_name == 'pull_request'
+        working-directory: qe
+        run: npm run test:pw-bdd:smoke
+
+      - name: Run full Gherkin acceptance suite
+        if: github.event_name != 'pull_request'
+        working-directory: qe
+        run: npm run test:pw-bdd
+
+      - name: Upload Playwright HTML, JUnit, Cucumber report and traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-bdd-${{ github.run_id }}
+          path: |
+            qe/pw-bdd/reports/
+            qe/pw-bdd/playwright-report/
+            qe/pw-bdd/test-results/
+            qe/test-results/
+          if-no-files-found: warn
+          retention-days: 14
