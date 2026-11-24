@@ -14,7 +14,7 @@
 | --- | --- | --- |
 | Smoke tests | Not run | [GitHub Actions run link] |
 | Regression tests | Not run | [report artifact] |
-| Critical requirements covered | [assessed / not assessed] | [traceability] |
+| Critical requirements covered | [assessed / not assessed] | [test or report links] |
 | Critical open defects | [number] | [issue links] |
 | High open defects | [number] | [issue links] |
 | Cross-browser coverage | [project list / outcomes] | [JUnit] |
@@ -22,7 +22,6 @@
 | Known flaky test rate | [rate / trend] | [CI history] |
 
 ## Known risks and mitigations
-- BUG-001: missing user-facing fatal HLS error (candidate upstream defect; validate in target environment).
 - Device compatibility/DRM/sound/remote behaviour not certified by Playwright.
 - No real backend/API security coverage in this frontend-only application.
 - Third-party poster/media availability affects real playback scenarios.
