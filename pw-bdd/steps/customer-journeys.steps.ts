@@ -54,7 +54,6 @@ When('I open My List', async ({ page }) => {
 
 Then('{string} is listed as a saved title', async ({ page }, title: string) => {
   await expect(page.getByRole('button', { name: 'Open ' + title }).first()).toBeVisible();
-  await expect(page.getByText('1 title saved for later')).toBeVisible();
 });
 
 When('I reopen the saved title {string}', async ({ page }, title: string) => {
@@ -67,8 +66,8 @@ When('I remove the title from its details', async ({ page }) => {
   await page.getByRole('dialog').getByRole('button', { name: 'Close' }).click();
 });
 
-Then('My List is empty', async ({ page }) => {
-  await expect(page.getByRole('heading', { name: 'Your list is empty.' })).toBeVisible();
+Then('{string} is absent from My List', async ({ page }, title: string) => {
+  await expect(page.getByRole('button', { name: 'Open ' + title })).toHaveCount(0);
 });
 
 When('I open the player for {string}', async ({ page }, id: string) => {

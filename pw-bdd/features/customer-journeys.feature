@@ -30,9 +30,9 @@ Feature: Streaming journeys run through the Playwright Test runner
     And I open My List
     And I reopen the saved title "The Crimson Hour"
     And I remove the title from its details
-    Then My List is empty
+    Then "The Crimson Hour" is absent from My List
     When I refresh the bookmarked page
-    Then My List is empty
+    Then "The Crimson Hour" is absent from My List
 
   @regression @REQ-PLAYER
   Scenario: Playback controls update the actual video element

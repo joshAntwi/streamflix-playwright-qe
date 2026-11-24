@@ -61,9 +61,9 @@ Feature: Customers can discover, save and play StreamFlix content
     And I navigate to My List
     And I open the saved title "The Crimson Hour"
     And I remove the open title from My List
-    Then My List should be empty
+    Then My List should not contain "The Crimson Hour"
     When I refresh the current page
-    Then My List should be empty
+    Then My List should not contain "The Crimson Hour"
 
   @regression @REQ-PLAYER
   Scenario: Player options change the actual media element

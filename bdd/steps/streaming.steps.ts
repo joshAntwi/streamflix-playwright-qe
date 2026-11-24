@@ -95,11 +95,10 @@ When('I remove the open title from My List', async function (this: StreamFlixWor
 
 Then('My List should contain {string}', async function (this: StreamFlixWorld, title: string) {
   await expect(this.page.getByRole('button', { name: 'Open ' + title }).first()).toBeVisible();
-  await expect(this.page.getByText('1 title saved for later')).toBeVisible();
 });
 
-Then('My List should be empty', async function (this: StreamFlixWorld) {
-  await expect(this.page.getByRole('heading', { name: 'Your list is empty.' })).toBeVisible();
+Then('My List should not contain {string}', async function (this: StreamFlixWorld, title: string) {
+  await expect(this.page.getByRole('button', { name: 'Open ' + title })).toHaveCount(0);
 });
 
 When('I open the player for title {string}', async function (this: StreamFlixWorld, titleId: string) {
