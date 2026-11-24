@@ -14,7 +14,7 @@ test.describe('REQ-HTTP: static production delivery @api', () => {
     expect(response.status()).toBe(200);
     expect(response.headers()['content-type']).toContain('text/html');
     // An HTTP fallback is a deployment prerequisite, not evidence that
-    // the client router rendered search results. See tests/ui/search.spec.ts.
+    // the client router rendered search results. See tests/ui/deeplink.spec.ts.
     expect(await response.text()).toMatch(/<title>StreamFlix/);
   });
 

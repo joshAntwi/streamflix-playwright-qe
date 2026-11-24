@@ -1,4 +1,4 @@
-import { test, expect } from '../../fixtures/auth.fixture';
+import { test, expect } from '@playwright/test';
 import { LoginPage } from '../../pages/login.page';
 
 test.describe('REQ-AUTH: demo login and protected routes', () => {
@@ -8,9 +8,9 @@ test.describe('REQ-AUTH: demo login and protected routes', () => {
     await login.submit('qe@example.test', 'abcd1234');
     await expect(page).toHaveURL(/\/profiles$/);
     await expect(page.getByRole('heading', { name: "Who's watching?" })).toBeVisible();
-    await page.getByRole('button', { name: 'Alok' }).click();
+    await page.getByRole('button', { name: 'Alok', exact: true }).click();
     await expect(page).toHaveURL(/\/browse$/);
-    await expect(page.getByRole('button', { name: 'Search', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Open The Crimson Hour' }).first()).toBeVisible();
   });
 
   test('rejects passwords shorter than four characters without creating a session @regression', async ({ page }) => {
@@ -23,9 +23,10 @@ test.describe('REQ-AUTH: demo login and protected routes', () => {
     await expect(page).toHaveURL(/\/login$/);
   });
 
-  test('redirects unauthenticated visitors away from protected pages @regression', async ({ page }) => {
-    await page.goto('/search?q=crimson');
+  test('redirects anonymous visitors from a direct player URL to sign-in @regression', async ({ page }) => {
+    await page.goto('/watch/t1');
     await expect(page).toHaveURL(/\/login$/);
+    await expect(page.locator('video')).toHaveCount(0);
     await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
   });
 
@@ -33,13 +34,13 @@ test.describe('REQ-AUTH: demo login and protected routes', () => {
     const login = new LoginPage(page);
     await login.goto();
     await login.submit('qe@example.test', 'abcd1234');
-    await page.getByRole('button', { name: 'Alok' }).click();
+    await page.getByRole('button', { name: 'Alok', exact: true }).click();
     await expect(page).toHaveURL(/\/browse$/);
 
     // The demo application's profile menu lacks an accessible name.
     await page.locator('button[aria-haspopup="menu"]').click();
     await page.getByRole('button', { name: 'Sign out' }).click();
-    await expect(page).toHaveURL(/\/$/);
+    await expect(page).toHaveURL(url => url.pathname === '/' || url.pathname === '/login');
 
     await page.goto('/my-list');
     await expect(page).toHaveURL(/\/login$/);

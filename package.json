@@ -18,12 +18,15 @@
     "test:visual": "playwright test --project=chromium --grep @visual",
     "test:visual:update": "playwright test --project=chromium --grep @visual --update-snapshots",
     "test:ui": "playwright test --project=chromium --ui",
-    "report": "playwright show-report"
+    "report": "playwright show-report",
+    "test:pw-bdd": "bddgen -c playwright-bdd.config.ts && playwright test -c playwright-bdd.config.ts",
+    "test:pw-bdd:smoke": "bddgen -c playwright-bdd.config.ts && playwright test -c playwright-bdd.config.ts --grep @smoke"
   },
   "devDependencies": {
     "@playwright/test": "1.65.1",
     "@axe-core/playwright": "4.14.0",
     "@types/node": "^22.18.0",
-    "typescript": "7.0.2"
+    "typescript": "7.0.2",
+    "playwright-bdd": "9.2.1"
   }
 }

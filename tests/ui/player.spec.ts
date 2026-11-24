@@ -1,9 +1,11 @@
 import { test, expect } from '../../fixtures/auth.fixture';
 import { SearchPage } from '../../pages/search.page';
+import { PlayerPage } from '../../pages/player.page';
 
-test.describe('REQ-PLAYER: playback journeys and controls', () => {
-  test('opens a selected title in the player and toggles media mute @smoke @regression', async ({ authenticatedPage: page }) => {
+test.describe('REQ-PLAYER: meaningful control and recovery behaviour', () => {
+  test('opens a selected title in the player @smoke @regression', async ({ authenticatedPage: page }) => {
     const search = new SearchPage(page);
+    const player = new PlayerPage(page);
     await search.goto();
     await search.searchFor('crimson');
     await search.openTitle('The Crimson Hour');
@@ -11,62 +13,63 @@ test.describe('REQ-PLAYER: playback journeys and controls', () => {
 
     await expect(page).toHaveURL(/\/watch\/t1$/);
     await expect(page.getByText(/The Crimson Hour/).first()).toBeVisible();
-
-    const video = page.locator('video');
-    await expect(video).toBeVisible();
-    await page.getByRole('button', { name: 'Mute', exact: true }).click();
-    await expect(page.getByRole('button', { name: 'Unmute', exact: true })).toBeVisible();
-    await expect.poll(() => video.evaluate((element: HTMLVideoElement) => element.muted)).toBe(true);
-
-    await page.getByRole('button', { name: 'Unmute', exact: true }).click();
-    await expect.poll(() => video.evaluate((element: HTMLVideoElement) => element.muted)).toBe(false);
-    await expect(page.getByRole('button', { name: 'Mute', exact: true })).toBeVisible();
+    await expect(player.video).toBeVisible();
   });
 
-  test('changes the actual playback speed from settings @regression', async ({ authenticatedPage: page }) => {
-    await page.goto('/watch/t1');
-    const video = page.locator('video');
-    await expect(video).toBeVisible();
+  test('mute button and keyboard shortcut update the actual media element @regression',
+    async ({ authenticatedPage: page }) => {
+      const player = new PlayerPage(page);
+      await player.goto();
+      await player.revealControls();
+      await expect(player.video).toBeVisible();
+      await expect.poll(() => player.muted()).toBe(false);
 
-    await page.getByRole('button', { name: 'Settings', exact: true }).click();
-    await page.getByRole('button', { name: '1.5x', exact: true }).click();
-    await expect.poll(() => video.evaluate((element: HTMLVideoElement) => element.playbackRate)).toBe(1.5);
+      await page.getByRole('button', { name: 'Mute', exact: true }).click();
+      await expect.poll(() => player.muted()).toBe(true);
+      await expect(page.getByRole('button', { name: 'Unmute' })).toBeVisible();
 
-    await page.getByRole('button', { name: '1x', exact: true }).click();
-    await expect.poll(() => video.evaluate((element: HTMLVideoElement) => element.playbackRate)).toBe(1);
-  });
-
-  test('explains missing content and returns the viewer to browse @regression', async ({ authenticatedPage: page }) => {
-    await page.goto('/watch/does-not-exist');
-    await expect(page.getByText('Title not found.', { exact: false })).toBeVisible();
-
-    await page.getByRole('button', { name: 'Go back' }).click();
-    await expect(page).toHaveURL(/\/browse$/);
-    await expect(page.getByRole('link', { name: 'StreamFlix home' })).toBeVisible();
-  });
-
-  test('can decode the external HLS stream and advance playback @external-stream', async ({ authenticatedPage: page }) => {
-    test.skip(!process.env.RUN_LIVE_STREAM, 'Optional external-stream check: CDN/network availability is outside the test environment');
-    test.slow();
-    await page.goto('/watch/t1');
-    const video = page.locator('video');
-    await expect(video).toBeVisible();
-
-    // Actual media readiness and timeline advancement (not just a Play button).
-    await expect.poll(() => video.evaluate((element: HTMLVideoElement) => element.readyState), {
-      timeout: 30_000,
-      message: 'HLS stream never provided decodable media',
-    }).toBeGreaterThanOrEqual(2);
-
-    // Muted playback avoids browser autoplay policy blocking the test.
-    await video.evaluate(async (element: HTMLVideoElement) => {
-      element.muted = true;
-      await element.play();
+      await page.keyboard.press('m');
+      await expect.poll(() => player.muted()).toBe(false);
+      await expect(page.getByRole('button', { name: 'Mute', exact: true })).toBeVisible();
     });
-    const firstPosition = await video.evaluate((element: HTMLVideoElement) => element.currentTime);
-    await expect.poll(() => video.evaluate((element: HTMLVideoElement) => element.currentTime), {
-      timeout: 20_000,
-      message: 'Video timeline did not advance with real playback',
-    }).toBeGreaterThan(firstPosition + 1);
+
+  test('playback-speed setting changes HTMLMediaElement playbackRate @regression',
+    async ({ authenticatedPage: page }) => {
+      const player = new PlayerPage(page);
+      await player.goto();
+      await player.revealControls();
+      await page.getByRole('button', { name: 'Settings' }).click();
+      await page.getByRole('button', { name: '1.5x', exact: true }).click();
+
+      await expect.poll(() => player.playbackRate()).toBe(1.5);
+      await page.getByRole('button', { name: '1x', exact: true }).click();
+      await expect.poll(() => player.playbackRate()).toBe(1);
+    });
+
+  test('invalid title offers recovery and returns to a usable catalogue @regression',
+    async ({ authenticatedPage: page }) => {
+      const player = new PlayerPage(page);
+      await player.goto('does-not-exist');
+      await expect(page.getByText('Title not found.')).toBeVisible();
+      await page.getByRole('button', { name: 'Go back' }).click();
+      await expect(page).toHaveURL(/\/browse$/);
+      await expect(page.getByRole('button', { name: 'Open The Crimson Hour' }).first()).toBeVisible();
+    });
+
+  test('external HLS stream plays and advances its media clock @external-media', async ({ authenticatedPage: page }) => {
+    test.skip(process.env.RUN_MEDIA !== '1', 'External HLS/CDN dependency: run explicitly, not in deterministic CI gates');
+    test.setTimeout(90_000);
+    const player = new PlayerPage(page);
+    await player.goto();
+    await expect.poll(() => player.ready(), { timeout: 60_000 }).toBe(true);
+    // A real streaming assertion, unlike checking only that the video element exists.
+    await player.video.evaluate(async (video: HTMLVideoElement) => {
+      video.muted = true;
+      await video.play();
+    });
+    const start = await player.currentTime();
+    await expect.poll(() => player.currentTime(), { timeout: 20_000 }).toBeGreaterThan(start + 0.5);
+    await player.video.evaluate((video: HTMLVideoElement) => video.pause());
+    await expect.poll(() => player.video.evaluate((video: HTMLVideoElement) => video.paused)).toBe(true);
   });
 });

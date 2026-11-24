@@ -9,7 +9,7 @@ This is a small **separate runner**, not a second GitHub repository. It compleme
 - Cucumber hooks create/close a fresh browser context **per scenario** (no state leakage).
 - `support/app-server.ts` builds/serves the pinned StreamFlix app: Cucumber does not use `playwright.config.ts` / Playwright Test's `webServer`.
 - A screenshot is attached to the HTML report for failed scenarios.
-- Tags `@smoke`, `@regression` and requirement IDs support selective, client-readable reporting.
+- Tags `@smoke`, `@regression` and requirement IDs support selective, client-readable reporting. Scenarios now cover real search/deep-link refresh, genre filtering, saved-title removal/persistence, player media properties, recovery and protected routes.
 
 ## Run locally
 
@@ -40,3 +40,7 @@ Results: `bdd/reports/cucumber.html` and `bdd/reports/cucumber.json`. CI runs sm
 **Alternative:** `playwright-bdd` can generate Playwright Test cases from Gherkin so that you retain the Playwright runner and fixtures; it is a strong choice if the requirement is *Gherkin plus Playwright tooling*, not specifically the Cucumber.js runner.
 
 The StreamFlix app has simulated authentication and no real backend. These BDD scenarios represent UI business flows; they are not evidence of server-side security or API behaviour.
+
+## Test data caveat
+
+A default UI login starts with **pre-populated saved titles** in the demo application. Native Cucumber scenarios therefore assert whether the *particular* title was added or removed, rather than asserting the list is globally empty. This is deliberately different from the Playwright Test fixture, which starts with an empty deterministic saved list.

@@ -41,27 +41,13 @@ The Playwright `webServer` config automatically builds StreamFlix and starts `vi
 
 ## BDD: native Cucumber.js + Playwright
 
-The [BDD example](bdd/README.md) lives in `bdd/` with its own committed dependency lockfile and **separate Cucumber.js runner**. Gherkin scenarios in [`bdd/features/streaming.feature`](bdd/features/streaming.feature) execute TypeScript step definitions that **reuse the same Page Objects** as the standard Playwright tests. A dedicated [GitHub Actions workflow](.github/workflows/cucumber.yml) runs BDD smoke scenarios for pull requests and the full tagged BDD regression on main pushes/manual runs, publishing Cucumber HTML/JSON reports.
+The [native Cucumber example](bdd/README.md) lives in `bdd/` with its own committed dependency lockfile and **separate Cucumber.js runner**. Gherkin scenarios in [`bdd/features/streaming.feature`](bdd/features/streaming.feature) execute TypeScript step definitions that **reuse the same Page Objects** as the standard Playwright tests. A dedicated [GitHub Actions workflow](.github/workflows/cucumber.yml) runs BDD smoke scenarios for pull requests and the full tagged BDD regression on main pushes/manual runs, publishing Cucumber HTML/JSON reports.
 
 From the `bdd/` directory, run `npm ci`, then `npm run test:smoke` (or `npm run test:regression`). Cucumber hooks start the StreamFlix preview automatically unless `BASE_URL` is provided.
 
-**Why separate runners?** Cucumber.js owns the Gherkin lifecycle, World, hooks, tags and Cucumber reports; Playwright supplies the browser and assertions, but its `test` fixtures and reporter are not active. If you want to keep the Playwright Test runner for Gherkin, consider [playwright-bdd](https://github.com/vitalets/playwright-bdd).
+**Why separate runners?** Native Cucumber.js owns World, hooks, tags and Cucumber reports. Playwright drives its browser but Playwright Test fixtures are not active. **[Playwright-BDD](pw-bdd/README.md)** is also implemented: it generates Playwright Test cases from Gherkin using `createBdd()`, reuses the same Page Objects, and retains Playwright's runner, fixtures, HTML reports and traces.
 
-## What the functional tests actually prove
-
-A green HTML response is **not** a working deep link. Infrastructure checks and product guarantees are separate:
-
-| Risk | Testable outcome | Location |
-| --- | --- | --- |
-| Bookmarked search | `/search?q=crimson` loads matching titles and retains query/results after reload | `tests/ui/search.spec.ts` |
-| Content discovery | Navbar search navigates to results and opens title details | `tests/ui/search.spec.ts` |
-| Playback controls | Selected title opens in player, mute and speed change the actual `HTMLMediaElement` properties | `tests/ui/player.spec.ts` |
-| Actual HLS playback | Optional test waits for decodable media and an advancing timeline; relies on a third-party stream | `tests/ui/player.spec.ts` |
-| Watchlist | Adding/removing content persists across reloads | `tests/ui/watchlist.spec.ts` |
-| Recovery | Bad links, empty search, corrupted state and sign-out each have tested user outcomes | `tests/ui/*.spec.ts` |
-| Deployment prerequisites | HTTP HTML/JS delivery and SPA history fallback, **not** React route execution or backend APIs | `tests/api/http.spec.ts` |
-
-For optional live playback verification, run `RUN_LIVE_STREAM=1 npx playwright test tests/ui/player.spec.ts --project=chromium --grep @external-stream`. Public HLS/CDN availability makes it unsuitable for a deterministic PR smoke gate.
+Run the adapter from the repository root using `npm run test:pw-bdd:smoke` or `npm run test:pw-bdd`. See [its GitHub Actions workflow](.github/workflows/playwright-bdd.yml). The `playwright-bdd` dependency is pinned to **9.2.1** in the root lockfile.
 
 ## Useful commands
 
@@ -72,6 +58,9 @@ For optional live playback verification, run `RUN_LIVE_STREAM=1 npx playwright t
 | `npm run test:regression` | All browser/mobile projects for `@regression` tests |
 | `npm run test:api` | App shell / static delivery HTTP requests |
 | `npm run test:a11y` | Axe accessibility assessment |
+| `RUN_MEDIA=1 npx playwright test --project=chromium --grep @external-media` | Optional real-HLS playback test; external CDN dependent |
+| `npm run test:pw-bdd` | Generate and execute Gherkin with the Playwright Test runner |
+| `npm run test:pw-bdd:smoke` | Same, limited to `@smoke` scenarios |
 | `RUN_VISUAL=1 npm run test:visual:update` | Create visual baseline locally; review it before committing |
 | `RUN_VISUAL=1 npm run test:visual` | Compare against approved baseline |
 | `npm run test:ui` | Interactive Playwright debugging |
@@ -91,20 +80,25 @@ streamflix-playwright-qe/
 │   ├── accessibility/            # axe scan and evidence
 │   └── visual/                   # opt-in baseline workflow
 ├── bdd/                          # native Cucumber runner + feature files + lockfile
-├── docs/                         # manual test pack and release report template
+├── pw-bdd/                       # Gherkin compiled to Playwright Test
+├── playwright-bdd.config.ts       # separate Playwright Test BDD config
+├── docs/                         # manual test pack, release report template and coverage review
 ├── package-lock.json              # reproducible QE dependencies
 ├── vendor/streamflix.package-lock.json # reconciled lock for pinned upstream
 ├── .github/workflows/playwright.yml
-├── .github/workflows/cucumber.yml  # independent BDD smoke workflow
+├── .github/workflows/cucumber.yml  # native Cucumber workflow
+├── .github/workflows/playwright-bdd.yml # Gherkin + Playwright Test workflow
 ├── .gitlab-ci.yml
 └── playwright.config.ts
 ```
 
-Tests use **accessible locators**, browser-context isolation, a guarded pre-navigation `addInitScript` session seed (one-time per tab, preserving changes across reloads), **web-first assertions**, and clear `@smoke`, `@regression`, `@api`, `@a11y`, and `@visual` tags. All page selectors were cross-checked against the upstream source at the pinned revision; Chromium smoke execution has passed in GitHub Actions; full cross-browser regression still requires a separate run.
+The **deep-link functional tests** are in `tests/ui/deeplink.spec.ts`: they verify route content and reload state in a real browser. The remaining `tests/api/http.spec.ts` is an explicitly labelled static-delivery check, not a proof of client-side navigation. Player controls are checked against the actual `HTMLVideoElement`; genuine CDN-driven playback is opt-in via `RUN_MEDIA=1`. Native Cucumber starts with 4 demo watchlist items; it asserts per-title outcomes rather than assuming an empty list.
+
+Tests use **accessible locators**, browser-context isolation, a session seed that runs once per tab, **web-first assertions**, and clear `@smoke`, `@regression`, `@api`, `@a11y`, and `@visual` tags. All page selectors were cross-checked against the upstream source at the pinned revision; Chromium smoke execution has passed in GitHub Actions; full cross-browser regression still requires a separate run.
 
 ## CI strategy
 
-**GitHub Actions** runs smoke tests for pull requests/pushes, and cross-browser regression on scheduled/manual runs. It checks out the pinned StreamFlix app separately, installs dependencies, builds/serves the production Vite bundle, publishes HTML and JUnit reports plus failure screenshots, videos, and traces. **GitLab CI** mirrors the smoke gate and provides JUnit reports suitable for merge-request display.
+**GitHub Actions** runs Chromium smoke tests for pull requests/pushes, Chromium regression on main pushes, and cross-browser regression on scheduled/manual runs. It checks out the pinned StreamFlix app separately, installs dependencies, builds/serves the production Vite bundle, publishes HTML and JUnit reports plus failure screenshots, videos, and traces. **GitLab CI** mirrors the smoke gate and provides JUnit reports suitable for merge-request display.
 
 **Accessibility:** Axe is an automated scanner, not a substitute for keyboard/screen reader or real-device testing. **Visual:** no baseline is invented here; generate and approve one on the environment that will run CI.
 
