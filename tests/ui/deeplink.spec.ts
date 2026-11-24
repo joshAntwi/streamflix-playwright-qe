@@ -20,7 +20,7 @@ test.describe('REQ-DEEPLINK: users can actually use bookmarked routes', () => {
     async ({ authenticatedPage: page }) => {
       await page.goto('/watch/t1');
       await expect(page).toHaveURL(/\/watch\/t1$/);
-      await expect(page.getByText('The Crimson Hour', { exact: true }).first()).toBeVisible();
+      await expect(page.getByText(/The Crimson Hour.*Signal Lost/).first()).toBeVisible();
       await expect(page.locator('video')).toBeVisible();
 
       await page.reload();
