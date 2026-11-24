@@ -1,55 +1,48 @@
-# StreamFlix — Risk-based test strategy
+# StreamFlix — risk-based quality engineering strategy
 
-## Context and scope
-StreamFlix is a **frontend-only** streaming concept. This suite tests a *pinned upstream application* and is not a fork. No real backend, DRM entitlement or account API exists. The login, catalogue and watchlist use localStorage/mock data. External HLS playback and poster URLs are not under our control.
+## Product assumptions and evidence honesty
 
-## Objectives
-- Demonstrate business-oriented quality ownership across requirements, execution, investigation and release decisions.
-- Provide fast, deterministic smoke feedback on pull requests.
-- Expand to cross-browser regression on schedule and before release.
-- Capture actionable evidence: traces, screenshots/video on failure, HTML and JUnit reports.
-- Make gaps and known defects visible instead of claiming unrealistic automation coverage.
+The pinned StreamFlix application is a **frontend-only** React concept. Login is simulated and catalogue/watchlist data live in localStorage/static fixtures. No real authentication server, entitlement or streaming backend exists. One public Mux HLS test stream and externally hosted poster art introduce external dependencies.
 
-## Risk-based coverage
-| Area / risk | Impact | Likelihood | Automated mitigation | Manual / external mitigation |
-| --- | --- | --- | --- | --- |
-| Authentication and profile navigation | High | Medium | UI valid/invalid and protected routes | Usability review; real authentication out of scope |
-| Search and catalogue discovery | High | Medium | Positive, negative, reset, content modal | Exploratory text/locale behaviour |
-| Watchlist persistence | High | Medium | Add/remove, empty state, reload | Cross-profile exploratory |
-| Playback UX | Critical | High | Video shell and player controls | Real stream, DRM, subtitle/audio and supported devices |
-| Failed HLS stream | High | Medium | BUG-001 negative executable specification | Fix assessment and retest on actual devices |
-| Browser compatibility | High | Medium | Chromium, Firefox, WebKit, mobile emulation | Actual supported device matrix |
-| Accessibility | High | Medium | Axe critical scan, semantic locators | Keyboard, screen reader, focus, contrast |
-| UI regressions | Medium | Medium | Opt-in reviewed screenshot baseline | Human review of visual and dynamic states |
-| Static delivery | Medium | Low | HTML routing, JS bundle HTTP checks | Actual API contracts absent |
+**Principle:** Test business-observable outcomes, not HTML root elements or mere presence of UI controls. Distinguish what the tests actually demonstrate from what a real commercial streaming platform requires.
 
-## Test layers and ownership
-1. **Static verification**: TypeScript typecheck, dependency and repository hygiene.
-2. **HTTP delivery checks**: frontend shell and built assets. NOT backend API contract coverage.
-3. **Browser functional**: meaningful user journeys using role/label locators and isolated contexts.
-4. **Resilience and accessibility**: controlled failures, expected broken behaviours and Axe.
-5. **Exploratory / real device**: remote navigation, playback, codecs, DRM, power cycles, network and sustained performance.
+## Risk and automation coverage
 
-## Entry criteria
-- Upstream revision and test environment pinned, reachable and documented.
-- Test data and browser build provisioned; deployment smoke ready.
-- Test plan, feature requirements and priority device list agreed with stakeholders.
+| Product area | User risk | Automated business outcome | Limitations / manual follow-up |
+| --- | --- | --- | --- |
+| Sign-in and protected routes | High | Demo login/profile shows browse content; invalid credentials do not create a session; anonymous player route redirects | No real security/authentication |
+| Discovery and deep links | High | Case-insensitive matching, exclusion of unrelated titles, genre filtering, browser bookmark/reload preserves results | Search catalogue is synchronous fixture data |
+| Saved list | High | Add/remove a discovered title and verify persisted state after refresh | Pre-populated demo list and no profile isolation |
+| Player controls | High | Actual `HTMLVideoElement.muted` and `playbackRate` change; invalid-title recovery returns to catalogue | Real CDN playback isolated under optional `@external-media` |
+| Media error reporting | Critical | Expected-failing `BUG-001` reproduces no user-facing error when HLS manifest fails | Requires upstream fix and retest |
+| Network resilience | Medium | Blocking poster CDN does not break search and details | Needs degraded network / offline / stream retry sessions |
+| Accessibility | High | Dialog keyboard focus trap and focus restoration; axe assessment | Screen readers and remote-input devices need manual verification |
+| State corruption | Medium | Invalid localStorage can recover through sign-in to browse | No schema migration tests |
+| Frontend delivery | Medium | HTML references accessible executable JS asset | HTTP check does not prove client-side routing |
 
-## Exit / release gates
-- No unresolved critical defect unless formally accepted with mitigation and rollback.
-- Critical-path smoke green; relevant regression executed with failures investigated.
-- Known defects risk assessed, owners assigned; no unexplained failures masked by retries.
-- Key supported devices and their firmware/OS coverage recorded outside Playwright.
-- Stakeholder receives concise risk, coverage, blockers and release recommendation.
+See [assertion-quality review](coverage-review.md) for the former weak checks and their replacements.
 
-## CI and flakiness policy
-- PR and push: typecheck + Chromium smoke, fast failure evidence.
-- Scheduled/manual: tagged regression across browser projects.
-- A retry (CI has one) is a diagnostic signal, not proof of reliability. Triage recurring flaky tests.
-- Fully parallel tests require isolated localStorage contexts; shared accounts and mutable external systems would require data factories and cleanup.
-- Generated HTML reports, JUnit XML and trace attachments are retained; secrets and storage states are never committed.
+## Test structure and runners
 
-## Out of scope / future work
-- No genuine CRUD API testing, authentication security, load testing or contract testing without a backend.
-- No claim that emulated mobile is physical smart-TV testing.
-- Extend to a device-lab integration once target TV platforms and available automation interfaces are known.
+- `tests/`: Playwright Test acceptance, static delivery, resilience, accessibility and opt-in real media tests.
+- `bdd/`: native Cucumber.js + Playwright automation using World and before/after hooks; independent runner and reports.
+- `pw-bdd/`: Gherkin step definitions through `playwright-bdd`, generated tests executed by Playwright Test's runner.
+- Shared `pages/` Page Objects keep selectors consistent. BDD implementations intentionally overlap coverage to illustrate architectural trade-offs, not add independent requirement counts.
+
+## CI gates
+
+- Pull requests: Chromium critical smoke + BDD smoke.
+- Main pushes: Chromium smoke and regression; complete native Cucumber and Playwright-BDD scenarios.
+- Manual/scheduled: cross-browser Playwright regression, subject to product risk and supported-browser requirements.
+- Isolated contexts; deterministic signed-in storage fixtures for Playwright; genuine demo UI sign-in for Cucumber/Playwright-BDD.
+- Committed npm lockfiles and `npm ci` for every dependency install.
+- Playwright HTML/JUnit and Cucumber reports, screenshots/trace retention on failures.
+- Track retries/flakes as quality signals. Don't weaken assertions merely to keep CI green.
+
+## Release decisions
+
+Require no unresolved critical issues without accepted risks and rollback, passing relevant critical journeys, verified supported-browser coverage, and documented device/manual checks. Publish known defects and testing gaps alongside results. A green browser pipeline **does not certify** codecs, DRM, captions, physical television remote navigation, scale or real API security.
+
+## Prioritised manual charters
+
+Playback after network interruption, sign-in entitlement/DRM on actual devices, captions/audio descriptions, multi-profile saved-list privacy, back/exit remote navigation, memory/performance and sustained viewing sessions.
