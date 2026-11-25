@@ -1,6 +1,6 @@
 # StreamFlix Quality Engineering — Playwright + TypeScript
 
-A **senior-level quality engineering showcase** testing the real [StreamFlix demo app](https://github.com/alokp0274/streamflix), without changing or copying the upstream app. It demonstrates test strategy, maintainable browser tests, HTTP-level checks, resilience, accessibility, CI/CD, reproducible failure evidence, exploratory coverage, and release-risk reporting.
+A **senior-level quality engineering showcase** testing the real [StreamFlix demo app](https://github.com/alokp0274/streamflix), without changing or copying the upstream app. It demonstrates maintainable browser tests, HTTP-level checks, resilience, accessibility, CI/CD, reproducible failure evidence, exploratory coverage, and release-risk reporting.
 
 > **Scope honesty:** StreamFlix is a frontend-only concept with simulated localStorage login and in-memory catalogue data. It has no backend API; tests in `tests/api` validate static HTTP delivery, *not* a production service. Video streams and imagery are hosted externally. TV remote simulation is *not* physical Smart-TV certification.
 
@@ -58,7 +58,6 @@ Run the adapter from the repository root using `npm run test:pw-bdd:smoke` or `n
 | `npm run test:regression` | All browser/mobile projects for `@regression` tests |
 | `npm run test:api` | App shell / static delivery HTTP requests |
 | `npm run test:a11y` | Axe accessibility assessment |
-| `npm run test:known-issues` | Documented expected-failing bug reproduction |
 | `RUN_MEDIA=1 npx playwright test --project=chromium --grep @external-media` | Optional real-HLS playback test; external CDN dependent |
 | `npm run test:pw-bdd` | Generate and execute Gherkin with the Playwright Test runner |
 | `npm run test:pw-bdd:smoke` | Same, limited to `@smoke` scenarios |
@@ -77,13 +76,13 @@ streamflix-playwright-qe/
 ├── tests/
 │   ├── ui/                       # sign in, routes, search, list, player, persistence
 │   ├── api/                      # HTTP delivery checks only (no upstream API)
-│   ├── resilience/               # failed asset requests and a tracked known defect
+│   ├── resilience/               # failed asset requests
 │   ├── accessibility/            # axe scan and evidence
 │   └── visual/                   # opt-in baseline workflow
 ├── bdd/                          # native Cucumber runner + feature files + lockfile
 ├── pw-bdd/                       # Gherkin compiled to Playwright Test
 ├── playwright-bdd.config.ts       # separate Playwright Test BDD config
-├── docs/                         # strategy, traceability, manual pack, bug, release report
+├── docs/                         # manual test pack, release report template and coverage review
 ├── package-lock.json              # reproducible QE dependencies
 ├── vendor/streamflix.package-lock.json # reconciled lock for pinned upstream
 ├── .github/workflows/playwright.yml
@@ -93,26 +92,22 @@ streamflix-playwright-qe/
 └── playwright.config.ts
 ```
 
-The **deep-link functional tests** are in `tests/ui/deeplink.spec.ts`: they verify route content and reload state in a real browser. The remaining `tests/api/http.spec.ts` is an explicitly labelled static-delivery check, not a proof of client-side navigation. Player controls are checked against the actual `HTMLVideoElement`; genuine CDN-driven playback is opt-in via `RUN_MEDIA=1`. A separate `@known-issue` test captures missing fatal-HLS error feedback without concealing it in the normal gate. Native Cucumber starts with 4 demo watchlist items; it asserts per-title outcomes rather than assuming an empty list.
+The **deep-link functional tests** are in `tests/ui/deeplink.spec.ts`: they verify route content and reload state in a real browser. The remaining `tests/api/http.spec.ts` is an explicitly labelled static-delivery check, not a proof of client-side navigation. Player controls are checked against the actual `HTMLVideoElement`; genuine CDN-driven playback is opt-in via `RUN_MEDIA=1`. Native Cucumber starts with 4 demo watchlist items; it asserts per-title outcomes rather than assuming an empty list.
 
-Tests use **accessible locators**, browser-context isolation, a one-time session seeding helper (not global `addInitScript`, which could invalidate reload tests), **web-first assertions**, and clear `@smoke`, `@regression`, `@api`, `@a11y`, `@visual`, `@known-issue` tags. All page selectors were cross-checked against the upstream source at the pinned revision; Chromium smoke execution has passed in GitHub Actions; full cross-browser regression still requires a separate run.
+Tests use **accessible locators**, browser-context isolation, a session seed that runs once per tab, **web-first assertions**, and clear `@smoke`, `@regression`, `@api`, `@a11y`, and `@visual` tags. All page selectors were cross-checked against the upstream source at the pinned revision; Chromium smoke execution has passed in GitHub Actions; full cross-browser regression still requires a separate run.
 
 ## CI strategy
 
 **GitHub Actions** runs Chromium smoke tests for pull requests/pushes, Chromium regression on main pushes, and cross-browser regression on scheduled/manual runs. It checks out the pinned StreamFlix app separately, installs dependencies, builds/serves the production Vite bundle, publishes HTML and JUnit reports plus failure screenshots, videos, and traces. **GitLab CI** mirrors the smoke gate and provides JUnit reports suitable for merge-request display.
 
-**Known issue:** `BUG-001` reproduces missing player error feedback when the HLS manifest fails. It's deliberately isolated from the normal gate using `@known-issue` and a Playwright expected-failure annotation. Run `npm run test:known-issues` to see the expected failure. See [defect report](docs/defect-BUG-001.md). Do not interpret this as a resolved bug.
+**Accessibility:** Axe is an automated scanner, not a substitute for keyboard/screen reader or real-device testing. **Visual:** no baseline is invented here; generate and approve one on the environment that will run CI.
 
-**Accessibility:** Axe is an automated scanner, not a substitute for keyboard/screen reader or real-device testing. **Visual:** no baseline is invented here; generate and approve one on the environment that will run CI. For the interview, demonstrate the process without falsely claiming it has already been executed.
+## Manual testing and release reporting
 
-## Quality ownership and interview narrative
+1. [Manual pack and exploratory charter](docs/manual-test-pack.md): TV/DRM/performance and accessibility gaps.
+2. [Sample client report](docs/release-report-template.md): evidence-based release confidence.
 
-1. [Test strategy and risk matrix](docs/test-strategy.md): coverage selection, layers and release gates.
-2. [Traceability matrix](docs/traceability.md): each requirement maps to a test or manual session.
-3. [Manual pack and exploratory charter](docs/manual-test-pack.md): TV/DRM/performance and accessibility gaps.
-4. [Known defect](docs/defect-BUG-001.md): reproducible steps, impact, triage.
-5. [Sample client report](docs/release-report-template.md): evidence-based release confidence.
-6. [Interview walkthrough](docs/interview-walkthrough.md): a 20–30 minute demo script.
+See the coverage review for the regression gates and how to walk through a failing test trace. [Coverage review](docs/coverage-review.md)
 
 ## Constraints / review before using for a real client
 
