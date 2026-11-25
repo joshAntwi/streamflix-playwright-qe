@@ -107,6 +107,8 @@ Tests use **accessible locators**, browser-context isolation, a session seed tha
 1. [Manual pack and exploratory charter](docs/manual-test-pack.md): TV/DRM/performance and accessibility gaps.
 2. [Sample client report](docs/release-report-template.md): evidence-based release confidence.
 
+See the coverage review for the regression gates and how to walk through a failing test trace. [Coverage review](docs/coverage-review.md)
+
 ## Constraints / review before using for a real client
 
 - App is upstream and could change. The pinned commit prevents unexpected test drift; review upgrades intentionally.
